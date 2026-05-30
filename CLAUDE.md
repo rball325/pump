@@ -20,7 +20,6 @@ No dependencies beyond the Python standard library. No build step, no virtual en
 pump.py        # shared estimate() function
 power.py       # energy/cost only (no flow)
 onf.py         # energy + flow + turnovers
-pnf.py         # same as onf.py, different schedule
 ```
 
 ### estimate() signature
