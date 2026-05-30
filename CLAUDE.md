@@ -5,36 +5,43 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Running the scripts
 
 ```bash
-python power.py
-python onf.py
-python pnf.py
+python3 power.py
+python3 onf.py
+python3 pnf.py
 ```
 
-No dependencies beyond the Python standard library. No build step, no tests, no virtual environment required.
+No dependencies beyond the Python standard library. No build step, no virtual environment required.
 
-## What this project does
+## Architecture
 
-Three standalone Python scripts that estimate pool pump energy consumption and operating cost, using the centrifugal pump affinity laws:
+`pump.py` is the shared library. All three scripts import `estimate()` from it and are otherwise just a schedule + one function call.
 
-- **Power scales as RPM³** — a pump running at half speed uses ~1/8 the power
-- **Flow scales linearly with RPM** — half speed yields half the flow rate
+```
+pump.py        # shared estimate() function
+power.py       # energy/cost only (no flow)
+onf.py         # energy + flow + turnovers
+pnf.py         # same as onf.py, different schedule
+```
 
-Each script takes a `schedule` (list of `(rpm, hours)` tuples) and pump parameters, then prints a per-segment breakdown plus daily totals.
+### estimate() signature
 
-| Script | Outputs |
-|--------|---------|
-| `power.py` | Power (W), energy (kWh), daily cost |
-| `onf.py` | Same + flow (GPM), gallons moved, pool turnovers |
-| `pnf.py` | Same as `onf.py` with a different test schedule |
+```python
+estimate(schedule, base_rpm, base_power_watts, base_flow_gpm, electricity_rate, pool_volume_gallons)
+```
 
-`onf.py` and `pnf.py` share the same `estimate_energy_flow_cost` function — they differ only in the example `schedule` at the bottom. `onf.py` tests higher RPM speeds; `pnf.py` tests a lower-RPM, lower-energy schedule.
+- `schedule` — list of `(rpm, hours)` tuples summing to 24 hrs
+- `base_flow_gpm` — optional; omit to suppress flow/turnover output (as in `power.py`)
+- `pool_volume_gallons` — optional; omit to suppress turnover calculation
 
-## Key parameters
+### Physics
 
-All functions accept these keyword arguments (with sensible defaults):
+- **Power ∝ RPM³** — half speed = ~1/8 the power
+- **Flow ∝ RPM** — half speed = half the flow rate
 
-- `base_rpm` / `base_power_watts` / `base_flow_gpm` — measured values from the pump spec sheet at a known operating point
-- `electricity_rate` — $/kWh (default 0.13–0.15 depending on script)
-- `pool_volume_gallons` — used to calculate daily turnovers
+To derive RPM from a target flow rate: `rpm = base_rpm × (target_gpm / base_flow_gpm)`
 
-To model a different pump or pool, change these values at the call site in the script's `__main__` block.
+### Pump parameters in use
+
+- `base_rpm = 3450`, `base_power_watts = 2130`, `base_flow_gpm = 150`
+- `pool_volume_gallons = 33000`
+- `electricity_rate = 0.15` $/kWh
