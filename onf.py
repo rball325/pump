@@ -2,9 +2,9 @@ from pump import estimate
 
 schedule = [
     (2750, 6), # High speed
-    (1500, 6), # Low speed
+    (1650, 6), # Low speed
     (2450, 6), # Medium speed
-    (1500, 6), # Low speed
+    (1650, 6), # Low speed
 ]
 
 estimate(
